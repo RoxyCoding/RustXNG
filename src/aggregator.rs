@@ -490,10 +490,6 @@ impl Searcher {
             }
         }
         let mut engines = self.select_engines(&request);
-        if engines.is_empty() {
-            response.error = Some("no engine selected for this request".to_string());
-            return response;
-        }
         // Some upstream online processors only apply when the query carries
         // their own syntax (for example currency conversion or a translation
         // language pair). Skip those engines before requests and failure
@@ -544,6 +540,8 @@ impl Searcher {
                     async move { bounded_index_search(&index, text, true, deadline).await },
                 )
             });
+        let had_local = local_task.is_some();
+        let had_wiki = wiki_task.is_some();
         // The official-site lookup starts as soon as Wikipedia has answered,
         // not after the slowest engine.
         let official_task: std::sync::Mutex<Option<tokio::task::JoinHandle<Vec<SearchResult>>>> =
@@ -720,6 +718,14 @@ impl Searcher {
                     items,
                 );
             }
+        }
+
+        // The local indexes are sources in their own right: a search with no
+        // engine still answers from them. Only a search with no engine and
+        // no indexed hit is an error.
+        if engines.is_empty() && !had_local && !had_wiki {
+            response.error = Some("no engine selected for this request".to_string());
+            return response;
         }
 
         container.close(
