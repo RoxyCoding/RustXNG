@@ -11,12 +11,16 @@ async function main() {
   if (first.done) throw new Error('renderer input closed');
   const {
     url, html, content_type: contentType = 'text/html', max_bytes: maxBytes,
+    budget_ms: budgetMs = 10000,
   } = JSON.parse(first.value);
   if (typeof html !== 'string' || !Number.isInteger(maxBytes) ||
       maxBytes < 1 || maxBytes > 4 * 1024 * 1024 || Buffer.byteLength(html) > maxBytes) {
     throw new Error('invalid renderer input size');
   }
   if (!['text/html', 'application/xhtml+xml'].includes(contentType)) throw new Error('invalid page content type');
+  if (!Number.isInteger(budgetMs) || budgetMs < 3000 || budgetMs > 60000) {
+    throw new Error('invalid renderer budget');
+  }
   const initialUrl = new URL(url);
   initialUrl.hash = '';
   if (!['http:', 'https:'].includes(initialUrl.protocol)) throw new Error('invalid page URL');
@@ -56,7 +60,7 @@ async function main() {
     });
     browser = await firefox.launch({
       headless: true,
-      timeout: 10000,
+      timeout: budgetMs,
       proxy: { server: `http://127.0.0.1:${denyProxy.address().port}` },
       firefoxUserPrefs: {
         // Firefox interception requires service workers enabled.
@@ -75,7 +79,7 @@ async function main() {
     });
     const context = await browser.newContext({ serviceWorkers: 'block', acceptDownloads: false });
     await context.routeWebSocket('**/*', socket => socket.close());
-    resources = new ResourceMonitor();
+    resources = new ResourceMonitor(budgetMs);
     let initial = true;
     await context.route('**/*', async route => {
       const finished = resources.start();
@@ -126,7 +130,7 @@ async function main() {
       })).catch(() => closed).finally(finished);
     });
     const rendered = (async () => {
-      await page.goto(url, { waitUntil: 'load', timeout: 10000 });
+      await page.goto(url, { waitUntil: 'load', timeout: budgetMs });
       let version;
       let output;
       do {

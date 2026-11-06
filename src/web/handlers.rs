@@ -37,6 +37,8 @@ pub struct SearchParams {
     pub theme: Option<String>,
     pub autocomplete: Option<String>,
     pub enabled_engines: Option<String>,
+    /// Fail the request when `engines=` names an engine that does not exist.
+    pub strict_engines: Option<String>,
     pub disabled_engines: Option<String>,
     pub enabled_plugins: Option<String>,
     pub disabled_plugins: Option<String>,
@@ -278,6 +280,11 @@ async fn run_search(
             .map(|value| matches!(value, "1" | "true" | "on" | "yes"))
             .unwrap_or(false),
         accept_language,
+        strict_engines: params
+            .strict_engines
+            .as_deref()
+            .map(|value| matches!(value, "1" | "true" | "on" | "yes"))
+            .unwrap_or(false),
         site_retry_done: false,
         strategy: match params.strategy.as_deref() {
             Some("staged") => crate::settings::SearchStrategy::Staged,

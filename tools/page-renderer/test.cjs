@@ -48,9 +48,14 @@ function run(html, fetch, options = {}) {
     url: options.url || 'https://fixture.invalid/article',
     html,
     max_bytes: options.maxBytes || 4 * 1024 * 1024,
+    budget_ms: options.budgetMs || renderBudget,
   }) + '\n');
   return { child, done };
 }
+
+  // Windows runners start Firefox and workers noticeably slower; give
+  // the worker round-trip tests a bigger render budget there.
+  const renderBudget = process.platform === 'win32' ? 20000 : 10000;
 
 function response(body, contentType = 'application/javascript') {
   return { status: 200, headers: { 'content-type': contentType }, body: Buffer.from(body).toString('base64') };
@@ -128,7 +133,7 @@ test('a worker resource that never receives a broker reply reaches the deadline'
   const result = await done;
   assert.equal(result.type, 'error');
   assert.equal(result.code, 1);
-  assert.match(result.message, /rendering exceeded 10000 ms/);
+  assert.match(result.message, /rendering exceeded \d+ ms/);
   assert.ok(result.requests.some(request => new URL(request.url).pathname === '/waiting.json'));
 });
 

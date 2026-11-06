@@ -7,13 +7,13 @@ class ResourceMonitor {
   #deadlineTimer;
   #error;
 
-  constructor() {
+  constructor(budgetMs = 10000) {
     this.deadline = new Promise((_, reject) => {
       this.#deadlineTimer = setTimeout(() => {
-        const error = new Error('rendering exceeded 10000 ms');
+        const error = new Error(`rendering exceeded ${budgetMs} ms`);
         this.#stop(error);
         reject(error);
-      }, 10000);
+      }, budgetMs);
     });
     this.deadline.catch(() => {});
   }
