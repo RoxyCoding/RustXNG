@@ -64,4 +64,3 @@ compact形式はバイト数を約36%減らし、1000件のURLと先頭80文字�
 - 100 問の正解 URL は自前索引のシード作成の経緯があり、索引が有利に出る質問集である（`docs/COMPARISON-2026-11-04.md` の注意）
 
 各問の応答、p95、取得先の休止・失敗、JSON計数の範囲は保存した測定記録で確認できる。[集計](../bench/results/issue-resolution-2026-11-05/summary.json) · [プロトコル](../bench/results/issue-resolution-2026-11-05/coverage/metadata.json) · [MCP契約](AGENT-OUTPUT.md)
-
